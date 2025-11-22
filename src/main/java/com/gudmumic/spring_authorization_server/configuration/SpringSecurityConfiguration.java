@@ -1,4 +1,4 @@
-package com.gudmumic.spring_authorization_server.configuration;
+package main.java.com.gudmumic.spring_authorization_server.configuration;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
@@ -26,7 +26,6 @@ import org.springframework.security.oauth2.server.authorization.settings.Authori
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -39,16 +38,14 @@ public class SpringSecurityConfiguration {
     @Bean
     @Order(1)
     public SecurityFilterChain authorizeServerSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
-
-        OAuth2AuthorizationServerConfiguration.applyDefaultSecurity(httpSecurity);
-        httpSecurity.getConfigurer(OAuth2AuthorizationServerConfigurer.class)
-                .oidc(Customizer.withDefaults());
-
-        httpSecurity.exceptionHandling((exceptions) ->
-                        exceptions.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login")))
-                .oauth2ResourceServer(jwtCustomizer -> {
-                    jwtCustomizer.jwt(Customizer.withDefaults());
-                });
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
+                OAuth2AuthorizationServerConfigurer.authorizationServer();
+        httpSecurity
+                .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
+                .with(authorizationServerConfigurer, (authorizationServer) ->
+                        authorizationServer
+                                .oidc(Customizer.withDefaults())	// Initialize `OidcConfigurer`
+                );
         return httpSecurity.build();
     }
 
@@ -127,6 +124,6 @@ public class SpringSecurityConfiguration {
 
     @Bean
     public AuthorizationServerSettings authorizationServerSettings() {
-        return AuthorizationServerSettings.builder().build();
+        return AuthorizationServerSettings.builder().issuer("http://auth-server:9000").build();
     }
 }
